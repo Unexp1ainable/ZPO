@@ -5,7 +5,7 @@ from ellipse import LsqEllipse
 from matplotlib.patches import Ellipse
 from helpers import *
 # path = "data/finalizace - FIB spots/121-0201G manual looks like 1s though/_2022_121-0201 S9251G, CN_images_FIB_Spots_30 keV; 50 nA.png"
-path = "data/1.png"
+path = "data/0.png"
 
 
 WINDOW_SIZE = 10
@@ -62,14 +62,21 @@ def extractBackground(img: np.ndarray):
     # filter out background to reduce noise
     mask = np.logical_and(mask, ellipseMask).astype(np.uint8)
     # further remove noise (values are 1 or 0, if pixel does not have enough neighbours, the value will be rounded to 0)
-    mask = cv.medianBlur(mask, 9)
-    # close and double floodfill to hopefuly extract only the hole
+    plt.imshow(mask)
+    plt.show()
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, np.ones((5, 5)))
+    plt.imshow(mask)
+    plt.show()
+    mask = cv.medianBlur(mask, 9)
+    plt.imshow(mask)
+    plt.show()
+    # close and double floodfill to hopefuly extract only the hole
     ffmask = np.zeros_like(mask, dtype=np.uint8)
     ffmask = np.zeros((mask.shape[0]+2, mask.shape[1]+2), dtype=np.uint8)
+
     cv.floodFill(mask, ffmask, (0, 0), 1, flags=cv.FLOODFILL_MASK_ONLY)
-    mask = np.zeros_like(ffmask, dtype=np.uint8)
-    cv.floodFill(ffmask[1:-1, 1:-1], mask, center, 1, flags=cv.FLOODFILL_MASK_ONLY)
+    mask = np.invert(ffmask)
+    # cv.floodFill(ffmask[1:-1, 1:-1], mask, center, 1, flags=cv.FLOODFILL_MASK_ONLY)
     mask = mask[1:-1, 1:-1]
     sobel = np.abs(cv.Sobel(mask.astype(np.float32), cv.CV_32F, 1, 0))
     sobel += np.abs(cv.Sobel(mask.astype(np.float32), cv.CV_32F, 0, 1))
@@ -86,10 +93,10 @@ def fitEllipse(X1, X2, img):
     reg = LsqEllipse().fit(X)
     center, width, height, phi = reg.as_parameters()
 
-    print(f'center: {center[0]:.3f}, {center[1]:.3f}')
-    print(f'width: {width:.3f}')
-    print(f'height: {height:.3f}')
-    print(f'phi: {phi:.3f}')
+    # print(f'center: {center[0]:.3f}, {center[1]:.3f}')
+    # print(f'width: {width:.3f}')
+    # print(f'height: {height:.3f}')
+    # print(f'phi: {phi:.3f}')
 
     fig = plt.figure(figsize=(6, 6))
     ax = plt.subplot()
@@ -113,16 +120,17 @@ if __name__ == "__main__":
     # for i in range(9):
     img = cv.imread(path, cv.IMREAD_GRAYSCALE)
     # img = img[100: 400, 100: 400]
-    img = cv.GaussianBlur(img, (5, 5), 0)
+    # img = cv.GaussianBlur(img, (5, 5), 0)
 
     # processColumns(img)
-    # extractBackground(img)
-    plotImageContours(img, "columns")
+    extractBackground(img)
+    # plotImageContours(img, "columns")
+
     # img = cv.imread(path, cv.IMREAD_GRAYSCALE)
     # img = cv.GaussianBlur(img, (5, 5), 0)
     # # plt.plot(img[img.shape[0]//2])
     # # plt.show()
-
+    # plotImageAs3D(img)
     # plt.ion()
     # # fig, ax = plt.subplots()
     # # ax.set_ylim([0, 255])
