@@ -86,8 +86,8 @@ def fitEllipse(img, kernel_func, plot=False):
     width, height = get_ellipse_size(best_width)
     center = best_center
     if plot:
-        plt.imshow(img)
-        plt.show()
+        # plt.imshow(img)
+        # plt.show()
         # plt.imshow(best_kernel)
         # plt.colorbar()
         # plt.show()
@@ -96,6 +96,7 @@ def fitEllipse(img, kernel_func, plot=False):
         fig, ax = plt.subplots(2,3,figsize=(18,12))
         ax[0,0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
         ax[0,0].axis('equal')
+        ax[0,0].set_title("Image")
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
@@ -103,6 +104,7 @@ def fitEllipse(img, kernel_func, plot=False):
         ax[0,0].add_patch(ellipse)
         ax[0,1].imshow(best_sobel)
         ax[0,1].axis('equal')
+        ax[0,1].set_title("Sobel filter")
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
@@ -111,6 +113,7 @@ def fitEllipse(img, kernel_func, plot=False):
 
         ax[0,2].imshow(best_mask)
         ax[0,2].axis('equal')
+        ax[0,2].set_title("Convolved image")
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
@@ -123,9 +126,11 @@ def fitEllipse(img, kernel_func, plot=False):
         crop = img[top:bottom, left:right]
         ax[1,0].imshow(crop)
         ax[1,0].axis('equal')
+        ax[1,0].set_title("Cropped section")
 
-        ax[1,0].imshow(best_kernel)
-        ax[1,0].axis('equal')
+        ax[1,1].imshow(best_kernel)
+        ax[1,1].axis('equal')
+        ax[1,1].set_title("Best filter")
         plt.show()
 
 
