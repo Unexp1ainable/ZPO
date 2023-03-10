@@ -3,115 +3,83 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import *
 from helpers import *
+from kernels import *
 
-# 3 is fucked up
-INDEX = 5
 
-paths = [
-    ("data/0.png",102, False),
-    ("data/2.png",85, False),
-    ("data/3.png",18, False),
-    ("data/6.png",141, False),
-    ("data/7.png",90, False),
-    ("data/5.png",80, False),
-    ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_15kV_50nA.png", 40, True),
-    ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_EV_test_300nA.png", 113, True),
-    ("data/finalizace - FIB spots/122-0007X manual 5s/_2022_122-0007 S8252X, US_images_FIB_Spots_EV_test_3uA.png", 78, True)
-   
-]
+# def fitEllipseFixedSize(img, plot=False):
+#     img_width, img_height = img.shape
+#     kernel = getEdgedKernelNormalized(true_width,2)
+#     mask = cv.filter2D(img, cv.CV_32F, kernel)
+#     sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
+#     amin = np.unravel_index(np.argmax(sobel, axis=None), sobel.shape)
+#     center = (amin[1],amin[0])
+#     if plot:
+#         plt.imshow(img)
+#         plt.show()
+#         plt.imshow(kernel)
+#         plt.show()
+#         plotImageAs3D(sobel)
+#         width, height = get_ellipse_size(true_width)
+#         fig, ax = plt.subplots(2,3,figsize=(18, 12))
+#         ax[0,0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
+#         ax[0,0].axis('equal')
+#         ellipse = Ellipse(
+#             xy=center, width=width, height=height, angle=0,
+#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
+#         )
+#         ax[0,0].add_patch(ellipse)
 
-path = paths[INDEX][0]
-ellipse_size = paths[INDEX][1], int(paths[INDEX][1]*np.sin(np.deg2rad(55)))
-true_width = ellipse_size[0]
-has_label = paths[INDEX][2]
+#         ax[0,1].imshow(sobel)
+#         ax[0,1].axis('equal')
+#         ellipse = Ellipse(
+#             xy=center, width=width, height=height, angle=0,
+#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
+#         )
+#         ax[0,1].add_patch(ellipse)
+#         ax[0,2].imshow(mask)
+#         ax[0,2].axis('equal')
+#         ellipse = Ellipse(
+#             xy=center, width=width, height=height, angle=0,
+#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
+#         )
+#         ax[0,2].add_patch(ellipse)
 
-def fitEllipseFixedSize(img):
-    kernel = np.zeros((ellipse_size[1]+1,ellipse_size[0]+1), dtype=np.uint8)
-    kernel = cv.ellipse(kernel, (ellipse_size[0]//2,ellipse_size[1]//2), (ellipse_size[0]//2,ellipse_size[1]//2), 0,0,360, 1, thickness=1)
-    mask = cv.filter2D(img, cv.CV_32F, kernel)
-    plt.imshow(mask)
-    plt.colorbar()
-    plt.show()
-    plotImageAs3D(mask)
-    
-    sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
-    plotImageAs3D(sobel)
-    amin = np.unravel_index(np.argmax(sobel, axis=None), sobel.shape)
-    center = (amin[1],amin[0])
-    width = ellipse_size[0]
-    height = ellipse_size[1]
-    phi = 0
-    fig, ax = plt.subplots(1,2,figsize=(12, 6))
-    ax[0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
-    ax[0].axis('equal')
-    ellipse = Ellipse(
-        xy=center, width=width, height=height, angle=np.rad2deg(phi),
-        edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-    )
-    ax[0].add_patch(ellipse)
+#         center_x, center_y = center
+#         left, right = max(0,center_x - width//2), min(center_x + width//2, img_width-1)
+#         top, bottom = max(0,center_y - height//2), min(center_y+ height//2,img_height-1)
+#         crop = img[top:bottom, left:right]
+#         ax[1,0].imshow(crop)
+#         ax[1,0].axis('equal')
+#         plt.show()
 
-    ax[1].imshow(sobel)
-    ax[1].axis('equal')
-    ellipse = Ellipse(
-        xy=center, width=width, height=height, angle=np.rad2deg(phi),
-        edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-    )
-    ax[1].add_patch(ellipse)
-    plt.show()
 
-def get_ellipse_size(width):
-    return width, int(width*np.sin(np.deg2rad(55)))
 
-def getNegativeInsideKernel(width, thickness=1):
-    width, height = get_ellipse_size(width)
-    kernel = np.zeros((height+1,width+1), dtype=np.float32)
-    inside = np.array(cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=-1)==1)
-    kernel[inside] = -1
-    kernel = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=thickness)
-    return kernel
-
-def getPlaygroundKernel(width, thickness=1):
-    width, height = get_ellipse_size(width)
-    kernel = np.zeros((height+1,width+1), dtype=np.float32)
-    inside = np.array(cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=-1)==1)
-    kernel[inside] = -1
-    kernel = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,180, 1, thickness=thickness)
-    kernel[:height//2,:] = 0
-
-    inside_mask = kernel == -1
-    border_mask = kernel == 1
-    border_pxs = np.count_nonzero(border_mask)
-    inside_pxs = np.count_nonzero(inside_mask)
-    kernel[inside_mask] /=inside_pxs
-    kernel[border_mask] /=border_pxs
-    return kernel
-
-def getNegativeKernel(width, thickness=1):
-    width, height = get_ellipse_size(width)
-    kernel = -np.ones((height+1,width+1), dtype=np.float32)
-    kernel = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=thickness)
-    return kernel
-
-def fitEllipse(img, plot=False):
-    width, height = img.shape
-    min_width = int(width*0.05)
-    max_width = int(width*0.8)
-    best_score = 0
+def fitEllipse(img, kernel_func, plot=False):
+    img_width, img_height = img.shape
+    min_width = int(img_width*0.1)
+    max_width = int(img_width*0.8)
+    best_score = -np.inf
     best_center = None
     best_width = None
     best_sobel = None
+    best_mask = None
+    best_kernel = None
     for width in range(min_width, max_width):
-        kernel = getNegativeInsideKernel(width,2)
+        kernel = kernel_func(width,2)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
         amin = np.unravel_index(np.argmax(sobel, axis=None), sobel.shape)
         center = (amin[1],amin[0])
-        print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
-        if sobel[amin] > best_score:
-            best_score = sobel[amin]
+        
+        if mask[amin] > best_score:
+            #print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
+            best_score = mask[amin]
             best_center = center
             best_width = width
             best_sobel = sobel
+            best_mask = mask
+            best_kernel = kernel
+
     print("="*50)
     print(f"width: {best_width}\ttrue_width={paths[INDEX][1]}\tcenter: {best_center}\tscore {best_score}")
     
@@ -120,32 +88,85 @@ def fitEllipse(img, plot=False):
     if plot:
         plt.imshow(img)
         plt.show()
-        plt.imshow(kernel)
-        plt.colorbar()
-        plt.show()
-        plotImageAs3D(best_sobel)
+        # plt.imshow(best_kernel)
+        # plt.colorbar()
+        # plt.show()
+        # plotImageAs3D(best_sobel)
         
-        fig, ax = plt.subplots(1,2,figsize=(12, 6))
-        ax[0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
-        ax[0].axis('equal')
+        fig, ax = plt.subplots(2,3,figsize=(18,12))
+        ax[0,0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
+        ax[0,0].axis('equal')
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
         )
-        ax[0].add_patch(ellipse)
-        ax[1].imshow(best_sobel)
-        ax[1].axis('equal')
+        ax[0,0].add_patch(ellipse)
+        ax[0,1].imshow(best_sobel)
+        ax[0,1].axis('equal')
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
         )
-        ax[1].add_patch(ellipse)
+        ax[0,1].add_patch(ellipse)
+
+        ax[0,2].imshow(best_mask)
+        ax[0,2].axis('equal')
+        ellipse = Ellipse(
+            xy=center, width=width, height=height, angle=0,
+            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
+        )
+        ax[0,2].add_patch(ellipse)
+
+        center_x, center_y = center
+        left, right = max(0,center_x - width//2), min(center_x + width//2, img_width-1)
+        top, bottom = max(0,center_y - height//2), min(center_y+ height//2,img_height-1)
+        crop = img[top:bottom, left:right]
+        ax[1,0].imshow(crop)
+        ax[1,0].axis('equal')
+
+        ax[1,0].imshow(best_kernel)
+        ax[1,0].axis('equal')
         plt.show()
 
 
 
 if __name__ == "__main__":
-    img = cv.imread(path, cv.IMREAD_GRAYSCALE)
-    if(has_label):
-        img = img[:-79]
-    fitEllipse(img, True)
+    
+
+    paths = [
+        ("data/0.png",102, False),
+        ("data/1.png",14,False),
+        ("data/2.png",85, False),
+        ("data/3.png",18, False),
+        ("data/6.png",130, False),
+        ("data/7.png",80, False),
+        ("data/5.png",80, False),
+        ("data/8.png",128, False),
+        ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_15kV_50nA.png", 40, True),
+        ("data/finalizace - FIB spots/121-0201G manual looks like 1s though/_2022_121-0201 S9251G, CN_images_FIB_Spots_30 keV; 50 pA.png", 85, True),
+        ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_EV_test_300nA.png", 113, True),
+        ("data/finalizace - FIB spots/122-0007X manual 5s/_2022_122-0007 S8252X, US_images_FIB_Spots_EV_test_3uA.png", 78, True),
+        ("data/finalizace - FIB spots/122-0049X manual 5s/_2022_122-0049 S8254X, GB_images_FIB_Spots_EV_test_300nA.png", 140, True),
+    ]
+
+    for INDEX in range(0,len(paths)):
+        INDEX = 12
+        path = paths[INDEX][0]
+        true_width = paths[INDEX][1]
+        has_label = paths[INDEX][2]
+
+        img = cv.imread(path, cv.IMREAD_GRAYSCALE)
+        if(has_label):
+            img = img[:-79]
+
+        # PLAYGROUND
+        # possible values for kernels are
+        # - half_empty
+        # - half_empty_norm
+        # - edged
+        # - edged_norm
+        # - half_negative
+        # - half_negative_norm
+        kernel = half_negative_norm
+        fitEllipse(img, kernel, True)
+        break
