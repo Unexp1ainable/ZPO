@@ -128,9 +128,10 @@ def fitEllipse(img, kernel_func, plot=False):
         ax[1,0].axis('equal')
         ax[1,0].set_title("Cropped section")
 
-        ax[1,1].imshow(best_kernel)
+        cb_han = ax[1,1].imshow(best_kernel)
         ax[1,1].axis('equal')
         ax[1,1].set_title("Best filter")
+        fig.colorbar(cb_han,ax=ax[1,1])
         plt.show()
 
 
