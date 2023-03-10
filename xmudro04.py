@@ -150,7 +150,6 @@ if __name__ == "__main__":
     ]
 
     for INDEX in range(0,len(paths)):
-        INDEX = 12
         path = paths[INDEX][0]
         true_width = paths[INDEX][1]
         has_label = paths[INDEX][2]
@@ -169,4 +168,3 @@ if __name__ == "__main__":
         # - half_negative_norm
         kernel = half_negative_norm
         fitEllipse(img, kernel, True)
-        break
