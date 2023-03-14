@@ -60,7 +60,7 @@ def edged_norm(width, thickness=1):
     kernel[border_mask] /=border_pxs
     return kernel
 
-# trochu lepsi ako halfempty normalized
+# trochu lepsi ako halfempty
 def half_empty_norm(width, thickness=1):
     width, height = get_ellipse_size(width)
     kernel = np.zeros((height+1,width+1), dtype=np.float32)
@@ -81,7 +81,7 @@ def half_empty_norm(width, thickness=1):
     return kernel
 
 # popici kernel
-def half_negative_norm(width, thickness=1):
+def half_negative_norm(width, thickness=2):
     width, height = get_ellipse_size(width)
     kernel = np.zeros((height+1,width+1), dtype=np.float32)
     kernel[height//2:,:] = 2
@@ -101,7 +101,7 @@ def half_negative_norm(width, thickness=1):
     return kernel
 
 # vracia mensie ako treba
-def half_negative(width, thickness=1):
+def half_negative(width, thickness=0):
     width, height = get_ellipse_size(width)
     kernel = np.zeros((height+1,width+1), dtype=np.float32)
     kernel[height//2:,:] = 2
@@ -113,15 +113,30 @@ def half_negative(width, thickness=1):
     kernel[:height//2,:] = -1
     return kernel
 
-# popici kernel
-def samov_kernel2(width, thickness=1):
+def half_negative_no_outline(width, thickness=0):
     width, height = get_ellipse_size(width)
     kernel = np.zeros((height+1,width+1), dtype=np.float32)
     kernel[height//2:,:] = 2
     filled_ellipse = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=-1)
     inside = np.array(filled_ellipse==1)
     kernel[inside] = -1
-    kernel = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,180, 1, thickness=1)
+    outline = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,180, 1, thickness=2)
+    outline_poss = np.array(outline == 1)
+    kernel[outline_poss] = -1
+    kernel[kernel==2] = 1
+    kernel[:height//2,:] = -1
+    return kernel
+
+def half_negative_norm_no_outline(width, thickness=0):
+    width, height = get_ellipse_size(width)
+    kernel = np.zeros((height+1,width+1), dtype=np.float32)
+    kernel[height//2:,:] = 2
+    filled_ellipse = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=-1)
+    inside = np.array(filled_ellipse==1)
+    kernel[inside] = -1
+    outline = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,180, 1, thickness=thickness)
+    outline_poss = np.array(outline == 1)
+    kernel[outline_poss] = -1
     kernel[kernel==2] = 1
     kernel[:height//2,:] = -1
 
@@ -129,6 +144,6 @@ def samov_kernel2(width, thickness=1):
     inside_pxs = np.count_nonzero(inside_mask)
     kernel[inside_mask] /= inside_pxs
     border_mask = kernel == 1
-    border_pxs = np.count_nonzero(border_mask) // 2
+    border_pxs = np.count_nonzero(border_mask)
     kernel[border_mask] /=border_pxs
     return kernel

@@ -65,11 +65,12 @@ def fitEllipse(img, kernel_func, plot=False):
     best_mask = None
     best_kernel = None
 
-    max_crit = sobel #/ mask 
+    
     for width in range(min_width, max_width):
-        kernel = kernel_func(width,2)
+        kernel = kernel_func(width)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
+        max_crit = mask #sobel / mask 
         amin = np.unravel_index(np.argmax(max_crit, axis=None), sobel.shape)
         center = (amin[1],amin[0])
         print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
@@ -174,5 +175,5 @@ if __name__ == "__main__":
         # - edged_norm
         # - half_negative
         # - half_negative_norm
-        kernel = samov_kernel2
+        kernel = half_negative_norm_no_outline
         fitEllipse(img, kernel, True)
