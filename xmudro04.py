@@ -64,15 +64,16 @@ def fitEllipse(img, kernel_func, plot=False):
     best_sobel = None
     best_mask = None
     best_kernel = None
+
+    max_crit = sobel #/ mask 
     for width in range(min_width, max_width):
         kernel = kernel_func(width,2)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
-        amin = np.unravel_index(np.argmax(sobel, axis=None), sobel.shape)
+        amin = np.unravel_index(np.argmax(max_crit, axis=None), sobel.shape)
         center = (amin[1],amin[0])
-        
+        print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
         if mask[amin] > best_score:
-            #print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
             best_score = mask[amin]
             best_center = center
             best_width = width
@@ -91,6 +92,7 @@ def fitEllipse(img, kernel_func, plot=False):
         # plt.imshow(best_kernel)
         # plt.colorbar()
         # plt.show()
+        # plotImageAs3D(best_mask)
         # plotImageAs3D(best_sobel)
         
         fig, ax = plt.subplots(2,3,figsize=(18,12))
@@ -165,12 +167,12 @@ if __name__ == "__main__":
             img = img[:-79]
 
         # PLAYGROUND
-        # possible values for kernels are
+        # possible values for kernels arenegative_inside
         # - half_empty
         # - half_empty_norm
         # - edged
         # - edged_norm
         # - half_negative
         # - half_negative_norm
-        kernel = half_negative_norm
+        kernel = samov_kernel2
         fitEllipse(img, kernel, True)
