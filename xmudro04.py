@@ -6,53 +6,6 @@ from helpers import *
 from kernels import *
 
 
-# def fitEllipseFixedSize(img, plot=False):
-#     img_width, img_height = img.shape
-#     kernel = getEdgedKernelNormalized(true_width,2)
-#     mask = cv.filter2D(img, cv.CV_32F, kernel)
-#     sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
-#     amin = np.unravel_index(np.argmax(sobel, axis=None), sobel.shape)
-#     center = (amin[1],amin[0])
-#     if plot:
-#         plt.imshow(img)
-#         plt.show()
-#         plt.imshow(kernel)
-#         plt.show()
-#         plotImageAs3D(sobel)
-#         width, height = get_ellipse_size(true_width)
-#         fig, ax = plt.subplots(2,3,figsize=(18, 12))
-#         ax[0,0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
-#         ax[0,0].axis('equal')
-#         ellipse = Ellipse(
-#             xy=center, width=width, height=height, angle=0,
-#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-#         )
-#         ax[0,0].add_patch(ellipse)
-
-#         ax[0,1].imshow(sobel)
-#         ax[0,1].axis('equal')
-#         ellipse = Ellipse(
-#             xy=center, width=width, height=height, angle=0,
-#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-#         )
-#         ax[0,1].add_patch(ellipse)
-#         ax[0,2].imshow(mask)
-#         ax[0,2].axis('equal')
-#         ellipse = Ellipse(
-#             xy=center, width=width, height=height, angle=0,
-#             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-#         )
-#         ax[0,2].add_patch(ellipse)
-
-#         center_x, center_y = center
-#         left, right = max(0,center_x - width//2), min(center_x + width//2, img_width-1)
-#         top, bottom = max(0,center_y - height//2), min(center_y+ height//2,img_height-1)
-#         crop = img[top:bottom, left:right]
-#         ax[1,0].imshow(crop)
-#         ax[1,0].axis('equal')
-#         plt.show()
-
-
 
 def fitEllipse(img, kernel_func, plot=False):
     img_width, img_height = img.shape
@@ -61,7 +14,6 @@ def fitEllipse(img, kernel_func, plot=False):
     best_score = -np.inf
     best_center = None
     best_width = None
-    best_sobel = None
     best_mask = None
     best_kernel = None
 
@@ -69,16 +21,13 @@ def fitEllipse(img, kernel_func, plot=False):
     for width in range(min_width, max_width):
         kernel = kernel_func(width)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
-        sobel = cv.Sobel(mask, cv.CV_64F, 0, 1, ksize=5)
-        max_crit = mask #sobel / mask 
-        amin = np.unravel_index(np.argmax(max_crit, axis=None), sobel.shape)
+        amin = np.unravel_index(np.argmax(mask, axis=None), mask.shape)
         center = (amin[1],amin[0])
-        print(f"width: {width}\tcenter: {center}\tscore {sobel[amin]}")
+        print(f"width: {width}\tcenter: {center}\tscore {mask[amin]}")
         if mask[amin] > best_score:
             best_score = mask[amin]
             best_center = center
             best_width = width
-            best_sobel = sobel
             best_mask = mask
             best_kernel = kernel
 
@@ -94,9 +43,8 @@ def fitEllipse(img, kernel_func, plot=False):
         # plt.colorbar()
         # plt.show()
         # plotImageAs3D(best_mask)
-        # plotImageAs3D(best_sobel)
         
-        fig, ax = plt.subplots(2,3,figsize=(18,12))
+        fig, ax = plt.subplots(2,2,figsize=(12,12))
         ax[0,0].imshow(cv.cvtColor(img, cv.COLOR_GRAY2RGB))
         ax[0,0].axis('equal')
         ax[0,0].set_title("Image")
@@ -105,23 +53,15 @@ def fitEllipse(img, kernel_func, plot=False):
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
         )
         ax[0,0].add_patch(ellipse)
-        ax[0,1].imshow(best_sobel)
+
+        ax[0,1].imshow(best_mask)
         ax[0,1].axis('equal')
-        ax[0,1].set_title("Sobel filter")
+        ax[0,1].set_title("Convolved image")
         ellipse = Ellipse(
             xy=center, width=width, height=height, angle=0,
             edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
         )
         ax[0,1].add_patch(ellipse)
-
-        ax[0,2].imshow(best_mask)
-        ax[0,2].axis('equal')
-        ax[0,2].set_title("Convolved image")
-        ellipse = Ellipse(
-            xy=center, width=width, height=height, angle=0,
-            edgecolor='b', fc='None', lw=2, label='Fit', zorder=2
-        )
-        ax[0,2].add_patch(ellipse)
 
         center_x, center_y = center
         left, right = max(0,center_x - width//2), min(center_x + width//2, img_width-1)
@@ -169,11 +109,12 @@ if __name__ == "__main__":
 
         # PLAYGROUND
         # possible values for kernels arenegative_inside
-        # - half_empty
-        # - half_empty_norm
-        # - edged
-        # - edged_norm
-        # - half_negative
-        # - half_negative_norm
-        kernel = half_negative_norm_no_outline
+        # - half_empty          - good
+        # - half_empty_norm     - the best one!!
+        # - edged               - dava mensie ako treba
+        # - edged_norm          - tiez dava mensie ako treba
+        # - half_negative       - dava male kruznice
+        # - half_negative_norm  - male kruznice a dava ich nizsie ako treba
+
+        kernel = half_empty_norm
         fitEllipse(img, kernel, True)
