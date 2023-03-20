@@ -6,24 +6,43 @@ from helpers import *
 from kernels import *
 
 
+def fitEllipse(img, kernel_func):
+    img_width, _ = img.shape
+    min_width = int(img_width*0.1)
+    max_width = int(img_width*0.9)
+    best_score = -np.inf
+    for width in range(min_width, max_width):
+        kernel = kernel_func(width)
+        mask = cv.filter2D(img, cv.CV_32F, kernel)
+        amin = np.unravel_index(np.argmax(mask, axis=None), mask.shape)
+        center = (amin[1],amin[0])
+        if mask[amin] > best_score:
+            best_score = mask[amin]
+            best_center = center
+            best_width = width
 
-def fitEllipse(img, kernel_func, plot=False):
+    width, height = get_ellipse_size(best_width)
+    center = best_center
+    return (center), (width, height)
+
+
+
+def fitEllipseAndPlot(img, kernel_func, plot=False):
     img_width, img_height = img.shape
     min_width = int(img_width*0.1)
-    max_width = int(img_width*0.8)
+    max_width = int(img_width*0.9)
     best_score = -np.inf
     best_center = None
     best_width = None
     best_mask = None
     best_kernel = None
-
+    
     
     for width in range(min_width, max_width):
         kernel = kernel_func(width)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         amin = np.unravel_index(np.argmax(mask, axis=None), mask.shape)
         center = (amin[1],amin[0])
-        print(f"width: {width}\tcenter: {center}\tscore {mask[amin]}")
         if mask[amin] > best_score:
             best_score = mask[amin]
             best_center = center
@@ -31,11 +50,9 @@ def fitEllipse(img, kernel_func, plot=False):
             best_mask = mask
             best_kernel = kernel
 
-    print("="*50)
-    print(f"width: {best_width}\ttrue_width={paths[INDEX][1]}\tcenter: {best_center}\tscore {best_score}")
-    
     width, height = get_ellipse_size(best_width)
     center = best_center
+    print((center), (width, height))
     if plot:
         # plt.imshow(img)
         # plt.show()
@@ -77,44 +94,13 @@ def fitEllipse(img, kernel_func, plot=False):
         fig.colorbar(cb_han,ax=ax[1,1])
         plt.show()
 
-
-
 if __name__ == "__main__":
-    
-
-    paths = [
-        ("data/0.png",102, False),
-        ("data/1.png",14,False),
-        ("data/2.png",85, False),
-        ("data/3.png",18, False),
-        ("data/6.png",130, False),
-        ("data/7.png",80, False),
-        ("data/5.png",80, False),
-        ("data/8.png",128, False),
-        ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_15kV_50nA.png", 40, True),
-        ("data/finalizace - FIB spots/121-0201G manual looks like 1s though/_2022_121-0201 S9251G, CN_images_FIB_Spots_30 keV; 50 pA.png", 85, True),
-        ("data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_EV_test_300nA.png", 113, True),
-        ("data/finalizace - FIB spots/122-0007X manual 5s/_2022_122-0007 S8252X, US_images_FIB_Spots_EV_test_3uA.png", 78, True),
-        ("data/finalizace - FIB spots/122-0049X manual 5s/_2022_122-0049 S8254X, GB_images_FIB_Spots_EV_test_300nA.png", 140, True),
-    ]
-
-    for INDEX in range(0,len(paths)):
-        path = paths[INDEX][0]
-        true_width = paths[INDEX][1]
-        has_label = paths[INDEX][2]
-
-        img = cv.imread(path, cv.IMREAD_GRAYSCALE)
-        if(has_label):
-            img = img[:-79]
-
-        # PLAYGROUND
-        # possible values for kernels arenegative_inside
-        # - half_empty          - good
-        # - half_empty_norm     - the best one!!
-        # - edged               - dava mensie ako treba
-        # - edged_norm          - tiez dava mensie ako treba
-        # - half_negative       - dava male kruznice
-        # - half_negative_norm  - male kruznice a dava ich nizsie ako treba
+    files = []
+    with open("gut.txt") as file:
+        files = file.readlines()
+    for path in files:
+        path = path.strip()
+        img = load_image(path)
 
         kernel = half_empty_norm
-        fitEllipse(img, kernel, True)
+        print(fitEllipse(img, kernel))
