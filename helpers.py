@@ -3,6 +3,7 @@ from typing import Literal
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import configparser
 
 
 def plotImageAs3D(img: np.ndarray) -> None:
@@ -74,3 +75,36 @@ def plotImageContours(img: np.ndarray, mode: Literal["rows", "columns"] = "rows"
             updateCanvas()
         else:
             plt.pause(0.5)
+
+
+def load_image(path: str) -> np.ndarray:
+    """Attempts to load an image and remove info strip if .hdr file is available.
+
+    Args:
+        path (str): Path to file. Header file is expected to be in the same folder and have ususal format (.png replaced with -png.hdr)
+
+    Raises:
+        Exception: If path to file is invalid
+
+    Returns:
+        np.ndarray: Loaded image [with cropped info strip].
+    """
+    img = cv.imread(path, cv.IMREAD_GRAYSCALE)
+    if img is None:
+        raise Exception(f"Invalid image path: {path}")
+    inipath = path[:-4] + "-png.hdr"
+    config = configparser.ConfigParser()
+    try:
+        config.read(inipath)
+        ssize = int(config["MAIN"]["ImageStripSize"])
+        img = img[:-ssize]
+
+    except:
+        pass
+    return img
+
+
+def draw_ellipse(img, center, width, height, phi):
+    c = np.rint(center).astype(int)
+    a = np.rint((width, height)).astype(int)
+    return cv.ellipse(img, c, a, np.rad2deg(phi), 0, 360, 255, 3)
