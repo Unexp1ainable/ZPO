@@ -1,81 +1,136 @@
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from scipy.signal import find_peaks, argrelextrema
 import os
+from xmudro04 import fitEllipse, fitEllipseAndPlot
+from kernels import *
+from helpers import load_image
 
-path = "data/0.png"
+
+def merge(xs, tresh=20):
+    l = len(xs)
+    if l < 2:
+        return xs
+    out = []
+    i = 0
+    while i < l - 1:
+        if (xs[i+1] - xs[i]) <= tresh:
+            out.append((xs[i+1] + xs[i]) // 2)
+            i += 1
+            if i == l - 1:
+                return out
+        else:
+            out.append(xs[i])
+        i += 1
+    out.append(xs[l-1])
+    return out
+
+
+def find_height(img):
+    # Iterate over the columns
+    max_count = 0
+    max_col = 0
+    max_start_pos = 0
+    max_end_pos = img.shape[0]
+    for j in range(img.shape[1]):
+        col = img[:, j]
+        start = False
+        c = count = start_pos = 0
+        end_pos = img.shape[0]
+        for i in range(img.shape[0]):
+            if col[i] == 0:
+                if not start:
+                    start = True
+                    start_pos = i
+                c += 1
+            elif start:
+                start = False
+                end_pos = i
+                if c > count:
+                    count = c
+                c = 0
+
+        if count > max_count:
+            max_count = count
+            max_col = j
+            max_start_pos = start_pos
+            max_end_pos = end_pos
+
+    return max_count, max_col, max_start_pos, max_end_pos
+
 
 def processImage(path):
-    img = cv.imread(path, cv.IMREAD_GRAYSCALE)
-    # img = cv.convertScaleAbs(img, alpha=1.2, beta=0)
+    # Load image
+    img = load_image(path)
 
-    # Otsu's thresholding after Gaussian filtering
-    blur = cv.GaussianBlur(img, (7, 7), 0)
-    ret1, th = cv.threshold(blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
-    ret, o1 = cv.threshold(img, 50, 255, cv.THRESH_BINARY)
+    #img = cv.GaussianBlur(img, (5, 5), 0)
 
-    masked = cv.bitwise_and(img, img, mask=th)
+    # Get histogram
+    r = img.ravel()
+    counts, bins = np.histogram(r, bins=256, range=(0, 255))
 
-    #ret2, th2 = cv.threshold(masked, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+    # Smooth the values
+    counts = np.convolve(counts, [1, 1, 1, 1, 1, 1, 1], 'same')
 
-    cv.floodFill(masked, None, (0, 0), 255)
+    # Show histogram
+    fig, ax = plt.subplots()
+    ax.bar(bins[:-1], counts, width=np.diff(bins), edgecolor="black", align="edge")
 
+    # Find the local minimums and filter the edges
+    mins = argrelextrema(counts, np.less, order=8)[0]
+    mins = list(filter(lambda x: 20 <= x <= 220, mins))
 
-    edges = cv.Canny(th, 100, 120)
+    min = merge(mins)[0]
 
-    plt.hist(img.ravel(), 256, [0, 256])
-    plt.axvline(ret1, color='red', linewidth=1)
-    #plt.axvline(ret2, color='yellow', linewidth=1)
+    plt.axvline(min, color='g')
+    _, out = cv.threshold(img, min, 255, cv.THRESH_BINARY)
     plt.show()
 
-    images = np.concatenate((img, th, o1), axis=1)
+    max_count, max_col, max_start_pos, max_end_pos = find_height(out)
+
+    # Draw a red line over the longest sequence of black pixels
+    img_with_line = cv.cvtColor(out, cv.COLOR_GRAY2BGR)
+    img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    cv.line(img_with_line, (max_col, max_start_pos), (max_col, max_end_pos), (0, 0, 255), thickness=2)
+    cv.putText(img_with_line, str(max_count), (max_col, max_end_pos+30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), thickness=2)
+
+    # Show the results
+    images = np.concatenate((img, img_with_line), axis=1)
+    cv.imshow(f'img - {path}', images)
+    cv.waitKey(0)
+
+
+# Otsu's thresholding
+def otsu(path, double=False):
+    # Load image
+    img = load_image(path)
+
+    # Blur Image and apply Otsu's method
+    blur = cv.GaussianBlur(img, (7, 7), 0)
+    ret1, th = cv.threshold(blur, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU)
+
+    # Optional second application
+    if double:
+        masked = cv.bitwise_and(img, img, mask=th)
+        ret2, th = cv.threshold(masked, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+
+    # Show results
+    images = np.concatenate((img, th), axis=1)
     cv.imshow(f'img - {path}', images)
     cv.waitKey(0)
 
 
 if __name__ == "__main__":
-    #processImage('./data/6.png')
+    #processImage('./data/4.png')
+    #processImage('./data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_100nA.png')
     #exit()
 
-    path = './data'
-
-    for fileName in os.listdir(path):
-        file = os.path.join(path, fileName)
-        processImage(file)
-
-
-
-
-
-
-# th = 80
-# max_val = 255
-# ret, o1 = cv.threshold(img, th, max_val, cv.THRESH_BINARY)
-# #cv.putText(o1, "Thresh_Binary", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-# ret, o2 = cv.threshold(img, th, max_val, cv.THRESH_BINARY_INV)
-# #cv.putText(o2, "Thresh_Binary_inv", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-# ret, o3 = cv.threshold(img, th, max_val, cv.THRESH_TOZERO)
-# #cv.putText(o3, "Thresh_Tozero", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-# ret, o4 = cv.threshold(img, th, max_val, cv.THRESH_TOZERO_INV)
-# #cv.putText(o4, "Thresh_Tozero_inv", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-# ret, o5 = cv.threshold(img, th, max_val, cv.THRESH_TRUNC)
-# #cv.putText(o5, "Thresh_trunc", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-# ret, o6 = cv.threshold(img, th, max_val, cv.THRESH_OTSU)
-# #cv.putText(o6, "Thresh_OSTU", (40, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv.LINE_AA)
-#
-# thresh1 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 11, 2)
-# thresh2 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 31, 3)
-# thresh3 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 13, 5)
-# thresh4 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 31, 4)
-#
-# final = np.concatenate((o1, o2, o3), axis=1)
-# final1 = np.concatenate((o4, o5, o6), axis=1)
-#
-# final2 = np.concatenate((thresh1, thresh2, thresh3, thresh4), axis=1)
-#
-# #images = np.concatenate((img, th), axis=1)
-# cv.imshow(f'img - {path}', final2)
-# #cv.imshow(f'img2 - {path}', final1)
-# cv.waitKey(0)
-
-
+    with open("gut.txt") as file:
+        files = file.readlines()
+    for path in files:
+        path = path.strip()
+        img = processImage(path)
+        #kernel = half_empty
+        #print(fitEllipseAndPlot(img, kernel, plot=True))
