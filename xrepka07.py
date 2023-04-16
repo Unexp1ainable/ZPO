@@ -15,7 +15,7 @@ def findSeed(img: np.ndarray):
     return minLoc
 
 
-def furtherEllipse(img: np.ndarray):
+def detectHalo(img: np.ndarray):
     # find background mean and standard deviation
     center = (img.shape[1]//2, img.shape[0]//2)
 
@@ -74,7 +74,6 @@ def furtherEllipse(img: np.ndarray):
     # mask = np.invert(ffmask)
     fmask2 = np.zeros_like(ffmask)
     seed = findSeed(ffmask)
-    print(seed)
     # plt.title("floodfill")
     # plt.imshow(ffmask)
     # plt.show()
@@ -109,11 +108,12 @@ def furtherEllipse(img: np.ndarray):
 
     a, b = np.nonzero(toDraw)
     params = fitEllipse(b, a)
-    nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
-    plt.title("Výsledok")
-    plt.imshow(nimg)
-    plt.axis('off')
-    plt.show()
+    # nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
+    # plt.title("Výsledok")
+    # plt.imshow(nimg)
+    # plt.axis('off')
+    # plt.show()
+    return params
 
 
 def fitEllipse(X1, X2):
@@ -135,7 +135,12 @@ if __name__ == "__main__":
         img = cv.GaussianBlur(img, (5, 5), 0)
 
         # processColumns(img)
-        furtherEllipse(img)
+        params = detectHalo(img)
+        nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
+        plt.title("Výsledok")
+        plt.imshow(nimg)
+        plt.axis('off')
+        plt.show()
     # plotImageContours(img, "columns")
 
     # img = cv.imread(path, cv.IMREAD_GRAYSCALE)

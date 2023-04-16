@@ -61,10 +61,7 @@ def find_height(img):
     return max_count, max_col, max_start_pos, max_end_pos
 
 
-def processImage(path):
-    # Load image
-    img = load_image(path)
-
+def determineHeight(img):
     #img = cv.GaussianBlur(img, (5, 5), 0)
 
     # Get histogram
@@ -76,30 +73,31 @@ def processImage(path):
 
     # Show histogram
     fig, ax = plt.subplots()
-    ax.bar(bins[:-1], counts, width=np.diff(bins), edgecolor="black", align="edge")
-
+    # ax.bar(bins[:-1], counts, width=np.diff(bins), edgecolor="black", align="edge")
     # Find the local minimums and filter the edges
     mins = argrelextrema(counts, np.less, order=8)[0]
     mins = list(filter(lambda x: 20 <= x <= 220, mins))
 
     min = merge(mins)[0]
 
-    plt.axvline(min, color='g')
+    # plt.axvline(min, color='g')
     _, out = cv.threshold(img, min, 255, cv.THRESH_BINARY)
-    plt.show()
+    # plt.show()
 
-    max_count, max_col, max_start_pos, max_end_pos = find_height(out)
+    return find_height(out)
 
+
+def drawLine(img, max_count, max_col, max_start_pos, max_end_pos):
     # Draw a red line over the longest sequence of black pixels
-    img_with_line = cv.cvtColor(out, cv.COLOR_GRAY2BGR)
     img = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-    cv.line(img_with_line, (max_col, max_start_pos), (max_col, max_end_pos), (0, 0, 255), thickness=2)
-    cv.putText(img_with_line, str(max_count), (max_col, max_end_pos+30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), thickness=2)
+    cv.line(img, (max_col, max_start_pos), (max_col, max_end_pos), (0, 0, 255), thickness=2)
+    cv.putText(img, str(max_count), (max_col, max_end_pos+30),
+               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), thickness=2)
 
     # Show the results
-    images = np.concatenate((img, img_with_line), axis=1)
-    cv.imshow(f'img - {path}', images)
-    cv.waitKey(0)
+    plt.title(f'img - {path}')
+    plt.imshow(img)
+    plt.show()
 
 
 # Otsu's thresholding
@@ -118,19 +116,26 @@ def otsu(path, double=False):
 
     # Show results
     images = np.concatenate((img, th), axis=1)
-    cv.imshow(f'img - {path}', images)
-    cv.waitKey(0)
+    plt.title(f'img - {path}')
+    plt.imshow(images)
+    plt.show()
 
 
 if __name__ == "__main__":
-    #processImage('./data/4.png')
+    # processImage('./data/4.png')
     #processImage('./data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_100nA.png')
-    #exit()
+    # exit()
 
     with open("gut.txt") as file:
         files = file.readlines()
     for path in files:
         path = path.strip()
-        img = processImage(path)
+        # path = "data/finalizace - FIB spots/122-0007X manual 5s/_2022_122-0007 S8252X, US_images_FIB_Spots_EV_test_300nA.png"
+        path = "data/4.png"
+        print(path)
+        # Load image
+        img = load_image(path)
+        res = determineHeight(img)
+        drawLine(img, *res)
         #kernel = half_empty
         #print(fitEllipseAndPlot(img, kernel, plot=True))

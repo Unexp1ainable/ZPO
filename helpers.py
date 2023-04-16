@@ -104,10 +104,10 @@ def load_image(path: str) -> np.ndarray:
     return img
 
 
-def draw_ellipse(img: np.ndarray, center, width, height, phi):
+def draw_ellipse(img: np.ndarray, center, width, height, phi, line_thickness=3):
     color = 255
     if img.ndim == 3:
         color = (0, 0, 255)
     c = np.rint(center).astype(int)
     a = np.rint((width, height)).astype(int)
-    return cv.ellipse(img, c, a, np.rad2deg(phi), 0, 360, color, 3)
+    return cv.ellipse(img, c, a, np.rad2deg(phi), 0, 360, color, line_thickness)
