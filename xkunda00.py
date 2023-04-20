@@ -72,17 +72,44 @@ def determineHeight(img):
     counts = np.convolve(counts, [1, 1, 1, 1, 1, 1, 1], 'same')
 
     # Show histogram
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
     # ax.bar(bins[:-1], counts, width=np.diff(bins), edgecolor="black", align="edge")
     # Find the local minimums and filter the edges
-    mins = argrelextrema(counts, np.less, order=8)[0]
-    mins = list(filter(lambda x: 20 <= x <= 220, mins))
+    # mins = argrelextrema(counts, np.less, order=8)[0]
+    # mins = list(filter(lambda x: 20 <= x <= 220, mins))
 
-    min = merge(mins)[0]
+    # min = merge(mins)[0]
+    firstPeak = 0
+    for i, item in enumerate(counts):
+        if item > ((img.shape[0]*0.1) * (img.shape[1]*0.1)):
+            firstPeak = i
+            break
 
-    # plt.axvline(min, color='g')
-    _, out = cv.threshold(img, min, 255, cv.THRESH_BINARY)
+    # minMax = 0
+    minMin = 9999999999
+    minI = 0
+    # for i in range(30):
+    #     if counts[i] > minMax:
+    #         minMax = counts[i]
+    rising = 0
+    for i in range(firstPeak, 0, -1):
+        if minMin > counts[i]:
+            minMin = counts[i]
+            minI = i
+            rising = 0
+        else:
+            rising+=1
+            if rising > 5:
+                break
+
+    minI = max(minI, 45)
+        # elif counts[i] > minMax:
+        #     break
+
+    # plt.axvline(minI, color='g')
+    _, out = cv.threshold(img, minI, 255, cv.THRESH_BINARY)
     # plt.show()
+    # plt.figure()
 
     return find_height(out)
 

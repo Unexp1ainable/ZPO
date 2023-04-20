@@ -6,13 +6,16 @@ from helpers import *
 from kernels import *
 
 
-def fitEllipse(img, kernel_func):
+def fitEllipse(img, kernel_func, height = None):
     img_width, _ = img.shape
     min_width = int(img_width*0.1)
     max_width = int(img_width*0.9)
+    if height:
+        min_width = int(height/np.sin(np.deg2rad(55))*0.8)
+        max_width = int(height/np.sin(np.deg2rad(55))*1.2)
     best_score = -np.inf
     for width in range(min_width, max_width):
-        kernel = kernel_func(width)
+        kernel = kernel_func(width, height)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         amin = np.unravel_index(np.argmax(mask, axis=None), mask.shape)
         center = (amin[1], amin[0])
@@ -21,15 +24,19 @@ def fitEllipse(img, kernel_func):
             best_center = center
             best_width = width
 
-    width, height = get_ellipse_size(best_width)
+    if not height:
+        width, height = get_ellipse_size(best_width)
     center = best_center
-    return (center), (width, height)
+    return (center), (best_width, height)
 
 
-def fitEllipseAndPlot(img, kernel_func, plot=False):
+def fitEllipseAndPlot(img, kernel_func, height = None, plot=False):
     img_width, img_height = img.shape
     min_width = int(img_width*0.1)
     max_width = int(img_width*0.9)
+    if height:
+        min_width = int(height/np.sin(np.deg2rad(55))*0.8)
+        max_width = int(height/np.sin(np.deg2rad(55))*1.2)
     best_score = -np.inf
     best_center = None
     best_width = None
@@ -37,7 +44,7 @@ def fitEllipseAndPlot(img, kernel_func, plot=False):
     best_kernel = None
 
     for width in range(min_width, max_width):
-        kernel = kernel_func(width)
+        kernel = kernel_func(width, height)
         mask = cv.filter2D(img, cv.CV_32F, kernel)
         amin = np.unravel_index(np.argmax(mask, axis=None), mask.shape)
         center = (amin[1], amin[0])
@@ -48,7 +55,9 @@ def fitEllipseAndPlot(img, kernel_func, plot=False):
             best_mask = mask
             best_kernel = kernel
 
-    width, height = get_ellipse_size(best_width)
+    if not height:
+        width, height = get_ellipse_size(best_width)
+    width = best_width
     center = best_center
     print((center), (width, height))
     if plot:

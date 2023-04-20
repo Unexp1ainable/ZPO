@@ -15,8 +15,9 @@ def negative_inside(width, thickness=1):
     return kernel
 
 # popici kernel
-def half_empty(width, use_outline=False):
-    width, height = get_ellipse_size(width)
+def half_empty(width, height = None, use_outline=False):
+    if not height:
+        width, height = get_ellipse_size(width)
     kernel = np.zeros((height,width), dtype=np.float32)
     kernel[height//2:,:] = 2 #make upper half of filter equal to zero
     filled_region = cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,360, 1, thickness=-1)
@@ -31,8 +32,8 @@ def half_empty(width, use_outline=False):
 
 # este trochu lepsi ako half_empty
 # za mna popici
-def half_empty_norm(width, use_outline=False):
-    kernel = half_empty(width, use_outline)
+def half_empty_norm(width, height = None, use_outline=False):
+    kernel = half_empty(width, height, use_outline)
     filled_region_mask = kernel==-1
     kernel[filled_region_mask] /= np.count_nonzero(filled_region_mask)
     positive_mask = kernel == 1
@@ -87,4 +88,29 @@ def half_negative_norm(width, use_outline=False):
     kernel[filled_region_mask] /= np.count_nonzero(filled_region_mask)
     positive_mask = kernel == 1
     kernel[positive_mask] /= np.count_nonzero(positive_mask)
+    return kernel
+
+
+
+# popici kernel
+def half_empty2(width, height = None, use_outline=False):
+    if not height:
+        width, height = get_ellipse_size(width)
+
+    s = max(width, height) + 10
+    kernel = np.full((s,s), 1.5, dtype=np.float32)
+    # kernel[height//2:,:] = 2 #make upper half of filter equal to zero
+    filled_region = cv.ellipse(kernel, (s//2,s//2), (width//2,height//2), 0,0,360, -1, thickness=-1)
+    outline_region = cv.ellipse(kernel, (s//2,s//2), (width//2,height//2), 0,0,180, 1 if use_outline else -1, thickness=1)
+    #kernel[:height//2,:] = 0
+    return kernel
+
+# este trochu lepsi ako half_empty
+# za mna popici
+def half_empty_norm2(width, height = None, use_outline=False):
+    kernel = half_empty2(width, height, use_outline)
+    filled_region_mask = kernel==-1
+    kernel[filled_region_mask] /= np.count_nonzero(filled_region_mask)
+    kernel[np.logical_not(filled_region_mask)] /= np.count_nonzero(np.logical_not(filled_region_mask))
+
     return kernel
