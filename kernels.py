@@ -97,12 +97,15 @@ def half_empty2(width, height = None, use_outline=False):
     if not height:
         width, height = get_ellipse_size(width)
 
-    s = max(width, height) + 10
-    kernel = np.full((s,s), 1.5, dtype=np.float32)
+    # s = max(width, height)
+    area = np.pi * width//2 * height//2
+    val = 2/(width*height - area)
+    kernel = np.full((height, width), val/3, dtype=np.float32)
     # kernel[height//2:,:] = 2 #make upper half of filter equal to zero
-    filled_region = cv.ellipse(kernel, (s//2,s//2), (width//2,height//2), 0,0,360, -1, thickness=-1)
-    outline_region = cv.ellipse(kernel, (s//2,s//2), (width//2,height//2), 0,0,180, 1 if use_outline else -1, thickness=1)
-    #kernel[:height//2,:] = 0
+    cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,0,180, -2/area, thickness=-1)
+    cv.ellipse(kernel, (width//2,height//2), (width//2,height//2), 0,180,360, -0.5/area, thickness=-1)
+    # outline_region = cv.ellipse(kernel, (s//2,s//2), (width//2,height//2), 0,0,180, 1 if use_outline else -1, thickness=1)
+    kernel[:int(height*0.7),:] = 0
     return kernel
 
 # este trochu lepsi ako half_empty

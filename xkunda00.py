@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.signal import find_peaks, argrelextrema
 import os
-from xmudro04 import fitEllipse, fitEllipseAndPlot
+from xmudro04 import fitEllipse
 from kernels import *
 from helpers import load_image
 
@@ -80,18 +80,16 @@ def determineHeight(img):
 
     # min = merge(mins)[0]
     firstPeak = 0
+    expectedPeakRising = (img.shape[0]*0.1) * (img.shape[1]*0.1) # 0.1 is empirical value that is scaled according to image size
     for i, item in enumerate(counts):
-        if item > ((img.shape[0]*0.1) * (img.shape[1]*0.1)):
+        if item > expectedPeakRising:
             firstPeak = i
             break
 
-    # minMax = 0
     minMin = 9999999999
     minI = 0
-    # for i in range(30):
-    #     if counts[i] > minMax:
-    #         minMax = counts[i]
     rising = 0
+    # find first valley to the left of first peak
     for i in range(firstPeak, 0, -1):
         if minMin > counts[i]:
             minMin = counts[i]
@@ -102,9 +100,8 @@ def determineHeight(img):
             if rising > 5:
                 break
 
+    # hard minimum necessary for some ugly images
     minI = max(minI, 45)
-        # elif counts[i] > minMax:
-        #     break
 
     # plt.axvline(minI, color='g')
     _, out = cv.threshold(img, minI, 255, cv.THRESH_BINARY)
