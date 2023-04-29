@@ -3,7 +3,8 @@ import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 from ellipse import LsqEllipse
-from helpers import *
+from dev.helpers import *
+from helpers import loadImage
 
 
 def findSeed(img: np.ndarray):
@@ -34,10 +35,10 @@ def detectHalo(img: np.ndarray):
     # calculate its characteristics
     counts, bins = np.histogram(background, 256, [0, 256])
     counts[0] = 0
-    thresh = max(counts) / 10
-    counts[counts < thresh] = 0
     # plt.bar(range(0, 256), counts, 1)
     # plt.show()
+    thresh = max(counts) / 10
+    counts[counts < thresh] = 0
     probs = counts / np.sum(counts)
     vals = list(range(256))
     mean = np.sum(probs * vals)
@@ -52,17 +53,22 @@ def detectHalo(img: np.ndarray):
     # filter out background to reduce noise
     mask = np.logical_and(mask, ellipseMask).astype(np.uint8)
 
-    amask = cv.medianBlur(mask, 3)
-
+    amask = mask
     # further remove noise (values are 1 or 0, if pixel does not have enough neighbours, the value will be rounded to 0)
     # plt.title("Vyfiltrované pozadie na celej snímke")
     # plt.imshow(mask)
     # plt.show()
-    exmask = cv.morphologyEx(mask, cv.MORPH_CLOSE, np.ones((7, 7)))
+    exmask = cv.morphologyEx(amask, cv.MORPH_CLOSE, np.ones((7, 7)))
     # plt.title("Morfologické zatváranie")
     # plt.imshow(mask)
     # plt.show()
+
+    # to make sure that floodfill gets everywhere
     mmask = cv.medianBlur(exmask, 5)
+    mmask[0] = 0
+    mmask[-1] = 0
+    mmask[:,0] = 0
+    mmask[:,-1] = 0
     # plt.title("Filtrovanie šumu")
     # plt.imshow(mask)
     # plt.show()
@@ -77,8 +83,13 @@ def detectHalo(img: np.ndarray):
     # plt.title("floodfill")
     # plt.imshow(ffmask)
     # plt.show()
+    ksize = round(img.shape[1]/512 * 21)
+    exmask2 = cv.morphologyEx(ffmask[1:-1, 1:-1], cv.MORPH_CLOSE, np.ones((ksize, ksize)))
+    # plt.title("Morfologické zatváranie")
+    # plt.imshow(exmask2)
+    # plt.show()
 
-    cv.floodFill(ffmask[1:-1, 1:-1], fmask2, seed, 1, flags=cv.FLOODFILL_MASK_ONLY)
+    cv.floodFill(exmask2, fmask2, seed, 1, flags=cv.FLOODFILL_MASK_ONLY)
     fmask2 = fmask2[1:-1, 1:-1]
 
     # plt.title("Dvojitý floodfill")
@@ -108,7 +119,7 @@ def detectHalo(img: np.ndarray):
 
     a, b = np.nonzero(toDraw)
     params = fitEllipse(b, a)
-    # nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
+    nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
     # plt.title("Výsledok")
     # plt.imshow(nimg)
     # plt.axis('off')
@@ -124,23 +135,31 @@ def fitEllipse(X1, X2):
 
 if __name__ == "__main__":
     matplotlib.rcParams['figure.figsize'] = (20, 10)
-    with open("gut.txt") as file:
+    # with open("gut.txt") as file:
+    with open("series2.txt") as file:
+    # with open("note.txt") as file:
         files = file.readlines()
     # files = ["data/finalizace - FIB spots/121-0319X manual 5s/_2022_121-0319 S8251X, CN_images_FIB_Spots_EV_test_3uA.png"]
     # files = ["data/finalizace - FIB spots/122-0007X manual 5s/_2022_122-0007 S8252X, US_images_FIB_Spots_EV_test_3uA.png"]
+    # files = ["data/series2/set5/30keV50nA-11.png"]
+    # files = ["data/series2/set1/30keV2.5nA.png"]
+    files = ["data/7.png"]
     for path in files:
-        print(f"Processing: {path}")
-        path = path.strip()
-        img = load_image(path)
-        img = cv.GaussianBlur(img, (5, 5), 0)
+        try:
+            print(f"Processing: {path}")
+            path = path.strip()
+            img = loadImage(path)
+            img = cv.GaussianBlur(img, (5, 5), 0)
 
-        # processColumns(img)
-        params = detectHalo(img)
-        nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
-        plt.title("Výsledok")
-        plt.imshow(nimg)
-        plt.axis('off')
-        plt.show()
+            # processColumns(img)
+            params = detectHalo(img)
+            nimg = draw_ellipse(cv.cvtColor(img, cv.COLOR_GRAY2BGR), *params)
+            plt.title("Výsledok")
+            plt.imshow(nimg)
+            plt.axis('off')
+            plt.show()
+        except:
+            print("):")
     # plotImageContours(img, "columns")
 
     # img = cv.imread(path, cv.IMREAD_GRAYSCALE)

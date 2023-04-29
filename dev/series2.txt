@@ -11,7 +11,6 @@ data/series2/set1/30keV250pA.png
 data/series2/set1/30keV50pA.png
 data/series2/set2/30 keV; 1 nA.png
 data/series2/set2/30 keV; 10 nA.png
-data/series2/set2/30 keV; 150 pA.png
 data/series2/set2/30 keV; 20 nA.png
 data/series2/set2/30 keV; 250 pA.png
 data/series2/set2/30 keV; 50 pA.png

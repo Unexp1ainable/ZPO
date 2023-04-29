@@ -6,7 +6,7 @@ from scipy.signal import find_peaks, argrelextrema
 import os
 from xmudro04 import fitEllipse
 from kernels import *
-from helpers import load_image
+from helpers import loadImage
 
 
 def merge(xs, tresh=20):
@@ -127,7 +127,7 @@ def drawLine(img, max_count, max_col, max_start_pos, max_end_pos):
 # Otsu's thresholding
 def otsu(path, double=False):
     # Load image
-    img = load_image(path)
+    img = loadImage(path)
 
     # Blur Image and apply Otsu's method
     blur = cv.GaussianBlur(img, (7, 7), 0)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         path = "data/4.png"
         print(path)
         # Load image
-        img = load_image(path)
+        img = loadImage(path)
         res = determineHeight(img)
         drawLine(img, *res)
         #kernel = half_empty
