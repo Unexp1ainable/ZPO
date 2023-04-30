@@ -29,7 +29,7 @@ def find_height(img: np.ndarray) -> int:
     for j in range(img.shape[1]):
         col = img[:, j]
         start = False
-        c = count =  0
+        c = count = 0
         for i in range(img.shape[0]):
             if col[i] == 0:
                 if not start:
@@ -66,7 +66,8 @@ def determineHeight(img: np.ndarray) -> int:
 
     # find first peak
     firstPeak = 0
-    expectedPeakRising = (img.shape[0]*0.1) * (img.shape[1]*0.1) # 0.1 is empirical value that is scaled according to image size
+    # 0.1 is empirical value that is scaled according to image size
+    expectedPeakRising = (img.shape[0]*0.1) * (img.shape[1]*0.1)
     for i, item in enumerate(counts):
         if item > expectedPeakRising:
             firstPeak = i
@@ -82,7 +83,7 @@ def determineHeight(img: np.ndarray) -> int:
             minI = i
             rising = 0
         else:
-            rising+=1
+            rising += 1
             if rising > 5:
                 break
 
@@ -92,5 +93,3 @@ def determineHeight(img: np.ndarray) -> int:
     _, out = cv.threshold(img, minI, 255, cv.THRESH_BINARY)
 
     return find_height(out)
-
-

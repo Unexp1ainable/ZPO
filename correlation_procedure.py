@@ -16,7 +16,7 @@ import numpy as np
 from kernels import *
 
 
-def wiggle(img: np.ndarray, width: int, height: int) -> Tuple[Tuple[int,int], Tuple[int,int]]:
+def wiggle(img: np.ndarray, width: int, height: int) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """Attempt to fit an ellipse with parameters similar to given width and height to the lower edge of the spot.
 
     Args:
@@ -56,7 +56,7 @@ def wiggle(img: np.ndarray, width: int, height: int) -> Tuple[Tuple[int,int], Tu
     return best_center, (best_width, best_height)
 
 
-def fitEllipse(img: np.ndarray, height: Union[int, None] = None) -> Tuple[Tuple[int,int], Tuple[int,int]]:
+def fitEllipse(img: np.ndarray, height: Union[int, None] = None) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """Fit ellpise to the middle part of the spot
 
     Args:
@@ -70,9 +70,6 @@ def fitEllipse(img: np.ndarray, height: Union[int, None] = None) -> Tuple[Tuple[
     min_width = int(img_width*0.1)
     max_width = int(img_width*0.9)
 
-    if not height:
-        width, height = get_ellipse_size(best_width)
-
     best_score = -np.inf
     for width in range(min_width, max_width):
         kernel = half_empty_norm(width, height)
@@ -81,5 +78,8 @@ def fitEllipse(img: np.ndarray, height: Union[int, None] = None) -> Tuple[Tuple[
         if mask[amin] > best_score:
             best_score = mask[amin]
             best_width = width
-  
+
+    if not height:
+        width, height = get_ellipse_size(best_width)
+
     return wiggle(img, best_width, height)

@@ -16,7 +16,7 @@ import numpy as np
 from ellipse import LsqEllipse
 
 
-def findSeed(img: np.ndarray) -> Tuple[int,int]:
+def findSeed(img: np.ndarray) -> Tuple[int, int]:
     """Find place where it is best to begin floodfill
 
     Args:
@@ -35,7 +35,7 @@ def findSeed(img: np.ndarray) -> Tuple[int,int]:
     return minLoc
 
 
-def detectHalo(img: np.ndarray) -> Tuple[(float, float), float, float, float]:
+def detectHalo(img: np.ndarray) -> Tuple[Tuple[float, float], float, float, float]:
     """Perform halo detection using background removal
 
     Args:
@@ -78,8 +78,8 @@ def detectHalo(img: np.ndarray) -> Tuple[(float, float), float, float, float]:
     # make sure, that floodfill gets everywhere
     mmask[0] = 0
     mmask[-1] = 0
-    mmask[:,0] = 0
-    mmask[:,-1] = 0
+    mmask[:, 0] = 0
+    mmask[:, -1] = 0
 
     # close and double floodfill to hopefuly extract only the spot
     ffmask = np.zeros_like(mmask, dtype=np.uint8)
@@ -116,7 +116,7 @@ def detectHalo(img: np.ndarray) -> Tuple[(float, float), float, float, float]:
     return params
 
 
-def fitEllipse(xs : np.ndarray, ys : np.ndarray) -> Tuple[(float, float), float, float, float]:
+def fitEllipse(xs: np.ndarray, ys: np.ndarray) -> Tuple[Tuple[float, float], float, float, float]:
     """Fit points to an ellipse
     Args:
         xs (np.ndarray): List of x coordinates of points
@@ -127,5 +127,7 @@ def fitEllipse(xs : np.ndarray, ys : np.ndarray) -> Tuple[(float, float), float,
     """
 
     X = np.array(list(zip(xs, ys)))
+    if X.size == 0:
+        raise ValueError("Unable to detect spot.")
     reg = LsqEllipse().fit(X)
     return reg.as_parameters()

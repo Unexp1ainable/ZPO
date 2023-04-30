@@ -34,11 +34,11 @@ def parse_args() -> Namespace:
 
 
 def plotMeasurement(
-        img: np.ndarray, spot_params: Tuple[(int, int),
-                                            (int, int),
+        img: np.ndarray, spot_params: Tuple[Tuple[float, float],
+                                            Tuple[float, float],
                                             float],
-        halo_params: Tuple[(int, int),
-                           (int, int),
+        halo_params: Tuple[Tuple[float, float],
+                           Tuple[float, float],
                            float]) -> None:
     """Show measurements overlayed over the image
 
@@ -88,7 +88,9 @@ def prefixAndMultiplier(n: float) -> Tuple[int, str]:
     return multiplier, prefixes[-1]
 
 
-def printResults(pxsx: float, pxsy: float, spot_size: Tuple[float,float], halo_width: float, halo_height: float, halo_phi: float) -> None:
+def printResults(
+        pxsx: float, pxsy: float, spot_size: Tuple[float, float],
+        halo_width: float, halo_height: float, halo_phi: float) -> None:
     """Print results to stdin
 
     Args:
@@ -113,7 +115,7 @@ def printResults(pxsx: float, pxsy: float, spot_size: Tuple[float,float], halo_w
     print(f"Angle: {halo_phi:.3f} rad")
 
 
-def main(path : str) -> None:
+def main(path: str) -> None:
     """Main function
 
     Args:
