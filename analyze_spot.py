@@ -1,3 +1,16 @@
+"""
+=========================================================================
+Brief: FIB spot measurement for ZPO project
+Authors:
+    Marek Mudroň (xmudro04)
+    Matej Kunda  (xkunda00)
+    Samuel Repka (xrepka07)
+File: analyze_spot.py
+Date: April 2023
+=========================================================================
+"""
+
+from typing import Tuple
 from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
 import numpy as np
@@ -5,17 +18,35 @@ from correlation_procedure import fitEllipse
 from halo_detection import detectHalo
 from helpers import loadImage, loadPixelsize
 from histogram_analysis import determineHeight
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 import cv2 as cv
 
 
-def parse_args():
+def parse_args() -> Namespace:
+    """Parse arguments given to the script
+
+    Returns:
+        Namespace: Parsed arguments
+    """
     args = ArgumentParser()
     args.add_argument("image", help="Path to the image")
     return args.parse_args()
 
 
-def plotMeasurement(img, spot_params, halo_params):
+def plotMeasurement(
+        img: np.ndarray, spot_params: Tuple[(int, int),
+                                            (int, int),
+                                            float],
+        halo_params: Tuple[(int, int),
+                           (int, int),
+                           float]) -> None:
+    """Show measurements overlayed over the image
+
+    Args:
+        img (np.ndarray): Input image
+        spot_params (Tuple[(int,int), (int,int)): Parameters of the spot ellipse. ((xpos,ypos), (width, height), angle). Angle should be in radians.
+        halo_params (Tuple[(int,int), (int,int)): Parameters of the halo ellipse. ((xpos,ypos), (width, height), angle). Angle should be in radians.
+    """
     spot_center, spot_size, spot_phi = spot_params
     halo_center, halo_size, halo_phi = halo_params
 
@@ -34,7 +65,16 @@ def plotMeasurement(img, spot_params, halo_params):
     plt.legend()
     plt.show()
 
-def prefixAndMultiplier(n):
+
+def prefixAndMultiplier(n: float) -> Tuple[int, str]:
+    """Determine best SI prefix and multiplier based on n.
+
+    Args:
+        n (float): Number for which to determine prefix
+
+    Returns:
+        Tuple[int,str]: (multiplier, prefix)
+    """
     prefixes = ["", "m", "u", "n", "p"]
 
     multiplier = 1
@@ -46,10 +86,19 @@ def prefixAndMultiplier(n):
         multiplier *= 1000
 
     return multiplier, prefixes[-1]
-    
 
 
-def printResults(pxsx, pxsy, spot_size, halo_width, halo_height, halo_phi):
+def printResults(pxsx: float, pxsy: float, spot_size: Tuple[float,float], halo_width: float, halo_height: float, halo_phi: float) -> None:
+    """Print results to stdin
+
+    Args:
+        pxsx (float): Pixelsize X
+        pxsy (float): Pixelsize Y
+        spot_size (Tuple[float,float]): Spot size (width, height)
+        halo_width (float): Halo width
+        halo_height (float): Halo height
+        halo_phi (float): Halo angle
+    """
     unit = "px" if pxsx == 1. and pxsy == 1. else "m"
 
     multiplier, prefix = prefixAndMultiplier(spot_size[0]*pxsx)
@@ -64,22 +113,27 @@ def printResults(pxsx, pxsy, spot_size, halo_width, halo_height, halo_phi):
     print(f"Angle: {halo_phi:.3f} rad")
 
 
-def main(path):
-    try:
-        img = loadImage(path)
-        pxsx, pxsy = loadPixelsize(path)
+def main(path : str) -> None:
+    """Main function
 
-        img = cv.GaussianBlur(img, (5, 5), 0)
+    Args:
+        path (str): path to image
+    """
+    # load required data
+    img = loadImage(path)
+    pxsx, pxsy = loadPixelsize(path)
 
-        firstHeight = determineHeight(img)
-        spot_center, spot_size = fitEllipse(img, firstHeight)
-        halo_center, halo_width, halo_height, halo_phi = detectHalo(img)
+    # smooth the image
+    img = cv.GaussianBlur(img, (5, 5), 0)
 
-        printResults(pxsx, pxsy, spot_size, halo_width, halo_height, halo_phi)
-        plotMeasurement(img, (spot_center, spot_size, 0.), (halo_center, (halo_width, halo_height), halo_phi))
+    # find parameters
+    firstHeight = determineHeight(img)
+    spot_center, spot_size = fitEllipse(img, firstHeight)
+    halo_center, halo_width, halo_height, halo_phi = detectHalo(img)
 
-    except Exception as e:
-        print("Error: " + str(e))
+    # report measurements
+    printResults(pxsx, pxsy, spot_size, halo_width, halo_height, halo_phi)
+    plotMeasurement(img, (spot_center, spot_size, 0.), (halo_center, (halo_width, halo_height), halo_phi))
 
 
 if __name__ == "__main__":
