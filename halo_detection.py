@@ -1,19 +1,49 @@
+"""
+=========================================================================
+Brief: FIB spot halo detection
+Authors:
+    Marek Mudroň (xmudro04)
+    Matej Kunda  (xkunda00)
+    Samuel Repka (xrepka07)
+File: halo_detection.py
+Date: April 2023
+=========================================================================
+"""
+
+from typing import Tuple
 import cv2 as cv
 import numpy as np
 from ellipse import LsqEllipse
 
 
-def findSeed(img: np.ndarray):
+def findSeed(img: np.ndarray) -> Tuple[int,int]:
+    """Find place where it is best to begin floodfill
+
+    Args:
+        img (np.ndarray): Input image
+
+    Returns:
+        Tuple[int,int]: (posx, posy)
+    """
+    # blur the image with a chonky kernel
     ksize = min(img.shape)//5
     kernel = np.ones((ksize, ksize), np.float32)/(ksize**2)
     im = img.astype(np.float32)
     dst = cv.filter2D(im, -1, kernel)
+    # find the minimum
     _, _, minLoc, _ = cv.minMaxLoc(dst)
     return minLoc
 
 
-def detectHalo(img: np.ndarray):
-    # find background mean and standard deviation
+def detectHalo(img: np.ndarray) -> Tuple[(float, float), float, float, float]:
+    """Perform halo detection using background removal
+
+    Args:
+        img (np.ndarray): Input image
+
+    Returns:
+        Tuple[(float, float), float, float, float]: Parameters of fitted ellipse ((posx, posy),width, height, phi)
+    """
     center = (img.shape[1]//2, img.shape[0]//2)
 
     # filter part of the image, where only background should be
@@ -22,7 +52,7 @@ def detectHalo(img: np.ndarray):
     ellipseMaskInv = np.bitwise_not(ellipseMask).astype(np.uint8)
     background = np.bitwise_and(img, ellipseMaskInv)
 
-    # calculate its characteristics
+    # find background mean and standard deviation
     counts, _ = np.histogram(background, 256, [0, 256])
     counts[0] = 0
     thresh = max(counts) / 10
@@ -39,17 +69,19 @@ def detectHalo(img: np.ndarray):
     # filter out background to reduce noise
     amask = np.logical_and(mask, ellipseMask).astype(np.uint8)
 
-    # further remove noise (values are 1 or 0, if pixel does not have enough neighbours, the value will be rounded to 0)
+    # close to create a filled region if possible
     exmask = cv.morphologyEx(amask, cv.MORPH_CLOSE, np.ones((7, 7)))
 
-    # to make sure that floodfill gets everywhere
+    # remove noise
     mmask = cv.medianBlur(exmask, 5)
+
+    # make sure, that floodfill gets everywhere
     mmask[0] = 0
     mmask[-1] = 0
     mmask[:,0] = 0
     mmask[:,-1] = 0
 
-    # close and double floodfill to hopefuly extract only the hole
+    # close and double floodfill to hopefuly extract only the spot
     ffmask = np.zeros_like(mmask, dtype=np.uint8)
     ffmask = np.zeros((mmask.shape[0]+2, mmask.shape[1]+2), dtype=np.uint8)
 
@@ -63,19 +95,37 @@ def detectHalo(img: np.ndarray):
     cv.floodFill(exmask2, fmask2, seed, 1, flags=cv.FLOODFILL_MASK_ONLY)
     fmask2 = fmask2[1:-1, 1:-1]
 
+    # extract the edge
     dilated = cv.morphologyEx(fmask2, cv.MORPH_DILATE, np.ones((3, 3)))
     edge = dilated - fmask2
 
     a, b = np.nonzero(edge)
     params = fitEllipse(b, a)
 
-    a, b = np.nonzero(edge)
+    # sometimes, artifacts are present inside of the filtered region. This is an attempt to remove them and improved fit precision.
+    filtered = edge.copy()
+    center, width, height, phi = params
+    c = np.rint(center).astype(int)
+    a = np.rint((width-10, height-10)).astype(int)
+
+    cv.ellipse(filtered, c, a, np.rad2deg(phi), 0, 360, 0, -1)
+
+    a, b = np.nonzero(filtered)
     params = fitEllipse(b, a)
 
     return params
 
 
-def fitEllipse(X1, X2):
-    X = np.array(list(zip(X1, X2)))
+def fitEllipse(xs : np.ndarray, ys : np.ndarray) -> Tuple[(float, float), float, float, float]:
+    """Fit points to an ellipse
+    Args:
+        xs (np.ndarray): List of x coordinates of points
+        ys (np.ndarray): List of y coordinates of points
+
+    Returns:
+        Tuple[(float, float), float, float, float]: Parameters of fitted ellipse ((posx, posy),width, height, phi)
+    """
+
+    X = np.array(list(zip(xs, ys)))
     reg = LsqEllipse().fit(X)
     return reg.as_parameters()
