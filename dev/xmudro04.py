@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
     for path in files:
         path = path.strip()
-        img = loadImage(path)
+        img = load_image("../"+path)
 
         kernel = half_empty2
         fitEllipse(img, kernel, None, True)

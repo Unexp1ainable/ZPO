@@ -1,3 +1,15 @@
+"""
+=========================================================================
+Brief: Function for creation of convolution kernels
+Authors:
+    Marek Mudroň (xmudro04)
+    Matej Kunda  (xkunda00)
+    Samuel Repka (xrepka07)
+File: kernels.py
+Date: April 2023
+=========================================================================
+"""
+
 import numpy as np
 import cv2 as cv
 
@@ -30,7 +42,7 @@ def half_empty_norm(width, height = None, use_outline=False):
     return kernel
 
 
-def lower20(width, height = None, use_outline=False):
+def lower20(width, height = None):
     if not height:
         width, height = get_ellipse_size(width)
 
