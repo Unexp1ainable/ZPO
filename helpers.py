@@ -1,13 +1,17 @@
-"""_summary_
-
-Raises:
-    Exception: _description_
-
-Returns:
-    _type_: _description_
+"""
+=========================================================================
+Brief: Helper functions
+Authors:
+    Marek Mudroň (xmudro04)
+    Matej Kunda  (xkunda00)
+    Samuel Repka (xrepka07)
+File: helpers.py
+Date: April 2023
+=========================================================================
 """
 
 import configparser
+from typing import Tuple
 
 import cv2 as cv
 import numpy as np
@@ -40,7 +44,16 @@ def loadImage(path: str) -> np.ndarray:
         pass
     return img
 
-def loadPixelsize(path: str):
+
+def loadPixelsize(path: str) -> Tuple[float, float]:
+    """Attempt to load pixelsize from .hdr file associated with the image
+
+    Args:
+        path (str): Path to the image
+
+    Returns:
+        Tuple[float, float]: PixelSizeX, PixelSizeY
+    """
     inipath = path[:-4] + "-png.hdr"
     pxsx = pxsy = 1.
 
